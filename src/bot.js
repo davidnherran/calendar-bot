@@ -38,7 +38,7 @@ async function startBot(client) {
             if(contacto.shortName) {
               await client.sendText(numeroUsuario, `> ⚠︎ ¡Hola! ${contacto.shortName}, ${saludo}.`);
               await client.sendText(numeroUsuario, `> ${mensajeFinal}`);
-              await client.sendText(numeroUsuario, `> _Si es algo urgente, no dudes en llamarme_.`);
+              await client.sendText(numeroUsuario, `> _Si es algo urgente, llámame dos veces_.`);
             } else {
               await client.sendText(numeroUsuario, `> ⚠︎ ¡Hola! ${contacto.shortName}, ${saludo}.`);
               await client.sendText(numeroUsuario, `> ${mensajeFinal}`);
