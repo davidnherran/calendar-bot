@@ -97,7 +97,7 @@ async function getCurrentEvent(auth) {
 
     if (ongoingEvent) {
       return `Ahora mismo estoy ${
-        ongoingEvent.description || "en una reunión laboral"
+        ongoingEvent.description || "con un tema laboral"
       }, pero estaré disponible de nuevo a las \`${new Date(ongoingEvent.end.dateTime).toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
