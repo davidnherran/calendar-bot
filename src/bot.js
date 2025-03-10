@@ -1,44 +1,21 @@
 const venom = require("venom-bot");
-const express = require("express");
 const { obtenerEventoActual } = require("./calendar");
 
 const usuariosEnEspera = new Map();
 let qrCodeData = "";
 
-const app = express();
-const port = process.env.PORT || 3001;
-
-app.get("/qr", (req, res) => {
-    if (qrCodeData) {
-        res.send(qrCodeData);
-    } else {
-        res.send("QR no disponible aún. Espera un momento.");
-    }
-});
-
-app.listen(port, () => {
-    console.log(`Servidor QR corriendo en http://localhost:${port}/qr`);
-});
-
 venom
     .create({
-        session: "session-s",
+        session: "session",
         headless: "new",
         disableWelcome: true,
-        logQR: false,
+        logQR: true,
         browserArgs: ["--no-sandbox", "--disable-setuid-sandbox"],
-        catchQR: (qrCode) => {
-            console.log(qrCode);
-            qrCodeData = qrCode;
-            console.log(`🔗 QR disponible en: http://localhost:${port}/qr`);
-        },
     })
     .then((client) => {
-        console.log("🤖 Bot iniciado");
         startBot(client);
     })
     .catch((error) => console.log("❌ Error al iniciar Venom:", error));
-
 
 async function startBot(client) {
     client.onMessage(async (message) => {
