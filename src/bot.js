@@ -42,7 +42,7 @@ venom
 
 async function startBot(client) {
     client.onMessage(async (message) => {
-        if (!message.isGroupMsg && message.body === "As") {
+        if (!message.isGroupMsg) {
             const numeroUsuario = message.from;
 
             if (usuariosEnEspera.has(numeroUsuario)) {
