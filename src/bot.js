@@ -6,7 +6,7 @@ let qrCodeData = "";
 
 venom
     .create({
-        session: "session",
+        session: "session-gc",
         headless: "new",
         disableWelcome: true,
         logQR: true,
