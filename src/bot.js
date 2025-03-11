@@ -1,48 +1,57 @@
-const venom = require("venom-bot");
+const { default: makeWASocket, useMultiFileAuthState } = require("@whiskeysockets/baileys");
 const { obtenerEventoActual } = require("./calendar");
+const { Boom } = require("@hapi/boom");
 
 const usuariosEnEspera = new Map();
-let qrCodeData = "";
 
-venom
-    .create({
-        session: "session-gc",
-        headless: "new",
-        disableWelcome: true,
-        logQR: true,
-        browserArgs: ["--no-sandbox", "--disable-setuid-sandbox"],
-    })
-    .then((client) => {
-        startBot(client);
-    })
-    .catch((error) => console.log("❌ Error al iniciar Venom:", error));
+async function iniciarBot() {
+    const { state, saveCreds } = await useMultiFileAuthState("auth_info");
+    
+    const sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: true, // Muestra el QR en la terminal
+        syncFullHistory: true,
+    });
 
-async function startBot(client) {
-    client.onMessage(async (message) => {
-        if (!message.isGroupMsg) {
-            const numeroUsuario = message.from;
+    sock.ev.on("creds.update", saveCreds);
 
-            if (usuariosEnEspera.has(numeroUsuario)) {
-                return;
-            }
+    sock.ev.on("connection.update", (update) => {
+        const { connection, lastDisconnect } = update;
+        if (connection === "close") {
+            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
+            console.log("🔄 Conexión cerrada. Reintentando...", shouldReconnect);
+            if (shouldReconnect) iniciarBot();
+        } else if (connection === "open") {
+            console.log("✅ Bot conectado a WhatsApp!");
+        }
+    });
+
+    sock.ev.on("messages.upsert", async ({ messages }) => {
+        const message = messages[0];
+
+        if (!message.key.fromMe && message.key.remoteJid.endsWith("@s.whatsapp.net")) {
+            const numeroUsuario = message.key.remoteJid;
+
+            if (usuariosEnEspera.has(numeroUsuario)) return;
 
             const mensajeEvento = await obtenerEventoActual();
             const saludo = obtenerSaludo();
             const mensajeFinal = mensajeEvento;
 
-            const contacto = await client.getContact(numeroUsuario);
-            if (contacto.shortName) {
-                await client.sendText(numeroUsuario, `> ⚠︎ ¡Hola! ${contacto.shortName}, ${saludo}.`);
-                await client.sendText(numeroUsuario, `> ${mensajeFinal}`);
-                await client.sendText(numeroUsuario, `> _Si es algo urgente, llámame dos veces_.`);
-            } else {
-                await client.sendText(numeroUsuario, `> ⚠︎ ¡Hola! ${contacto.shortName}, ${saludo}.`);
-                await client.sendText(numeroUsuario, `> ${mensajeFinal}`);
-            }
+            try {
+                const contacto = await sock.getContact(numeroUsuario);
+                const nombreUsuario = contacto.notify || "Usuario";
 
-            usuariosEnEspera.set(numeroUsuario, setTimeout(() => {
-                usuariosEnEspera.delete(numeroUsuario);
-            }, 3 * 60 * 1000));
+                await sock.sendMessage(numeroUsuario, { text: `> ⚠︎ ¡Hola! ${nombreUsuario}, ${saludo}.` });
+                await sock.sendMessage(numeroUsuario, { text: `> ${mensajeFinal}` });
+                await sock.sendMessage(numeroUsuario, { text: `> _Si es algo urgente, llámame dos veces_.` });
+
+                usuariosEnEspera.set(numeroUsuario, setTimeout(() => {
+                    usuariosEnEspera.delete(numeroUsuario);
+                }, 3 * 60 * 1000));
+            } catch (error) {
+                console.log("❌ Error al responder:", error);
+            }
         }
     });
 }
@@ -53,3 +62,5 @@ function obtenerSaludo() {
     if (hora >= 12 && hora < 19) return "buenas tardes";
     return "buenas noches";
 }
+
+iniciarBot();
