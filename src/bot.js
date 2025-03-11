@@ -1,6 +1,5 @@
-const { default: makeWASocket, useMultiFileAuthState } = require("@whiskeysockets/baileys");
+const { default: makeWASocket, useMultiFileAuthState } = require("baileys");
 const { obtenerEventoActual } = require("./calendar");
-const { Boom } = require("@hapi/boom");
 
 const usuariosEnEspera = new Map();
 
@@ -9,7 +8,7 @@ async function iniciarBot() {
     
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true, // Muestra el QR en la terminal
+        printQRInTerminal: true,
         syncFullHistory: true,
     });
 
@@ -39,10 +38,7 @@ async function iniciarBot() {
             const mensajeFinal = mensajeEvento;
 
             try {
-                const contacto = await sock.getContact(numeroUsuario);
-                const nombreUsuario = contacto.notify || "Usuario";
-
-                await sock.sendMessage(numeroUsuario, { text: `> ⚠︎ ¡Hola! ${nombreUsuario}, ${saludo}.` });
+                await sock.sendMessage(numeroUsuario, { text: `> ⚠︎ ¡Hola!, ${saludo}.` });
                 await sock.sendMessage(numeroUsuario, { text: `> ${mensajeFinal}` });
                 await sock.sendMessage(numeroUsuario, { text: `> _Si es algo urgente, llámame dos veces_.` });
 
